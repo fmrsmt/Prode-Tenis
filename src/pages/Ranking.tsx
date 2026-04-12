@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trophy, Medal } from 'lucide-react';
+import { ParticipantHistoryDialog } from '@/components/ParticipantHistoryDialog';
 
 export default function Ranking() {
   const { participants, tournaments, results } = useProdeStore();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [rankingType, setRankingType] = useState<'ATP' | 'RACE'>('ATP');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
 
   const years = useMemo(() => {
     const y = new Set<number>(tournaments.map(t => t.year));
@@ -22,6 +25,41 @@ export default function Ranking() {
     return calculateRanking(participants, tournaments, results, selectedYear, rankingType);
   }, [participants, tournaments, results, selectedYear, rankingType]);
 
+  const getParticipantHistory = () => {
+    if (!viewingHistoryId) return [];
+    
+    const participantResults = results.filter(r => r.participantId === viewingHistoryId);
+    
+    return participantResults.map(r => {
+      const tournament = tournaments.find(t => t.id === r.tournamentId);
+      return {
+        ...r,
+        tournament
+      };
+    })
+    .filter(r => r.tournament) // Only valid tournaments
+    .sort((a, b) => {
+      // Sort by year descending, then by order descending, then by creation time descending
+      if (b.tournament!.year !== a.tournament!.year) {
+        return b.tournament!.year - a.tournament!.year;
+      }
+      const orderA = a.tournament!.order ?? 0;
+      const orderB = b.tournament!.order ?? 0;
+      if (orderA !== orderB) {
+        return orderB - orderA;
+      }
+      return b.tournament!.createdAt - a.tournament!.createdAt;
+    });
+  };
+
+  const participantHistory = getParticipantHistory();
+  const viewingParticipant = participants.find(p => p.id === viewingHistoryId);
+
+  const openHistory = (participantId: string) => {
+    setViewingHistoryId(participantId);
+    setIsHistoryOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -30,6 +68,13 @@ export default function Ranking() {
           <p className="text-neutral-500">Clasificación anual de participantes</p>
         </div>
       </div>
+
+      <ParticipantHistoryDialog 
+        isOpen={isHistoryOpen} 
+        onOpenChange={setIsHistoryOpen} 
+        participantName={viewingParticipant?.name}
+        history={participantHistory}
+      />
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -83,7 +128,7 @@ export default function Ranking() {
                        index === 2 ? <Medal className="w-5 h-5 text-amber-600 mx-auto" /> : 
                        index + 1}
                     </TableCell>
-                    <TableCell className="font-medium">{entry.participant.name}</TableCell>
+                    <TableCell className="font-medium cursor-pointer text-emerald-700 hover:underline" onClick={() => openHistory(entry.participant.id)}>{entry.participant.name}</TableCell>
                     <TableCell className="text-right font-bold text-emerald-700">{entry.points}</TableCell>
                     <TableCell className="text-center hidden sm:table-cell text-neutral-500">{entry.tournamentsPlayed}</TableCell>
                     <TableCell className="text-center hidden sm:table-cell text-neutral-500">{entry.titles}</TableCell>

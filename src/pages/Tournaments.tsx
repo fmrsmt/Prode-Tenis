@@ -215,6 +215,7 @@ export default function Tournaments() {
                       <SelectItem value="KNOCKOUT_TOP_4">Fase Regular + Playoffs (Top 4)</SelectItem>
                       <SelectItem value="GROUPS">Grupos + Playoffs</SelectItem>
                       <SelectItem value="GENERAL_TABLE">Tabla General</SelectItem>
+                      <SelectItem value="REGULAR_SEASON">Fase Regular (Solo Puntos)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

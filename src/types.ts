@@ -1,5 +1,5 @@
 export type TournamentType = 'GRAND_SLAM' | 'MASTER_1000' | 'OTHER';
-export type TournamentFormat = 'KNOCKOUT' | 'KNOCKOUT_TOP_4' | 'GROUPS' | 'GENERAL_TABLE';
+export type TournamentFormat = 'KNOCKOUT' | 'KNOCKOUT_TOP_4' | 'GROUPS' | 'GENERAL_TABLE' | 'REGULAR_SEASON';
 export type TournamentStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
 export type Round = 'QF' | 'SF' | 'F';
 

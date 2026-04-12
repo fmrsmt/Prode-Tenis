@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useProdeStore } from '@/store/useProdeStore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { UserPlus, Trash2, Edit, History as HistoryIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { ParticipantHistoryDialog } from '@/components/ParticipantHistoryDialog';
 
 export default function Participants() {
   const { participants, tournaments, results, addParticipant, updateParticipant, deleteParticipant } = useProdeStore();
@@ -76,16 +76,6 @@ export default function Participants() {
     });
   };
 
-  const getRoundName = (pos: number, format: string) => {
-    if (pos === 1) return 'Campeón';
-    if (pos === 2) return 'Finalista';
-    if (pos === 3 || pos === 4) return 'Semifinalista';
-    if (pos >= 5 && pos <= 8) return 'Cuartos de Final';
-    if (format === 'GROUPS') return 'Fase de Grupos';
-    if (format === 'KNOCKOUT') return 'Fase Regular';
-    return '-';
-  };
-
   const participantHistory = getParticipantHistory();
   const viewingParticipant = participants.find(p => p.id === viewingHistoryId);
 
@@ -127,45 +117,12 @@ export default function Participants() {
         </Dialog>
       </div>
 
-      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Historial de {viewingParticipant?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="mt-4">
-            {participantHistory.length === 0 ? (
-              <p className="text-center text-neutral-500 py-8">No hay torneos registrados para este participante.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Torneo</TableHead>
-                    <TableHead className="text-center">Año</TableHead>
-                    <TableHead className="text-center">Posición</TableHead>
-                    <TableHead className="text-center">Ronda Alcanzada</TableHead>
-                    <TableHead className="text-right">Puntos ATP</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {participantHistory.map((h, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{h.tournament!.name}</TableCell>
-                      <TableCell className="text-center">{h.tournament!.year}</TableCell>
-                      <TableCell className="text-center font-bold">
-                        {h.position === 1 ? <Badge className="bg-yellow-500">1º</Badge> : `${h.position}º`}
-                      </TableCell>
-                      <TableCell className="text-center text-neutral-600">
-                        {h.tournament!.format !== 'GENERAL_TABLE' ? getRoundName(h.position, h.tournament!.format) : '-'}
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-emerald-700">{h.points}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ParticipantHistoryDialog 
+        isOpen={isHistoryOpen} 
+        onOpenChange={setIsHistoryOpen} 
+        participantName={viewingParticipant?.name}
+        history={participantHistory}
+      />
 
       <Card>
         <CardContent className="p-0">

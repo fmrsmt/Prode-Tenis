@@ -121,6 +121,17 @@ export default function TournamentDetail() {
        sortedByPhasePoints.forEach((p, index) => {
          if (newResults[p.id]) newResults[p.id].position = index + 1;
        });
+    } else if (tournament.format === 'REGULAR_SEASON') {
+       // Sort by points descending
+       const sortedByPoints = [...sortedByPhasePoints].sort((a, b) => {
+         const pointsA = newResults[a.id]?.points ? Number(newResults[a.id].points) : 0;
+         const pointsB = newResults[b.id]?.points ? Number(newResults[b.id].points) : 0;
+         return pointsB - pointsA;
+       });
+       
+       sortedByPoints.forEach((p, index) => {
+         if (newResults[p.id]) newResults[p.id].position = index + 1;
+       });
     } else {
        const finalMatch = localMatches.find(m => m.round === 'F');
        const sfMatches = localMatches.filter(m => m.round === 'SF');
@@ -386,8 +397,10 @@ export default function TournamentDetail() {
             <TableHead>Participante</TableHead>
             <TableHead className="w-24 text-center">Participa</TableHead>
             {tournament.format === 'GROUPS' && <TableHead className="w-24 text-center">Grupo</TableHead>}
-            <TableHead className="w-32 text-center">Puntos Fase</TableHead>
-            <TableHead className="w-24 text-center">Plenos</TableHead>
+            <TableHead className="w-32 text-center">
+              {tournament.format === 'REGULAR_SEASON' ? 'Puntos' : 'Puntos Fase'}
+            </TableHead>
+            {tournament.format !== 'REGULAR_SEASON' && <TableHead className="w-24 text-center">Plenos</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -409,7 +422,7 @@ export default function TournamentDetail() {
               } else if (tournament.format === 'KNOCKOUT_TOP_4') {
                 isQualifying = rankIndex < 4;
                 displayRank = (rankIndex + 1).toString();
-              } else {
+              } else if (tournament.format === 'KNOCKOUT') {
                 isQualifying = rankIndex < 8;
                 displayRank = (rankIndex + 1).toString();
               }
@@ -453,16 +466,18 @@ export default function TournamentDetail() {
                     disabled={!isParticipating}
                   />
                 </TableCell>
-                <TableCell>
-                  <Input 
-                    type="number" 
-                    className="text-center"
-                    value={localResults[p.id]?.plenos ?? ''}
-                    onChange={(e) => handleInputChange(p.id, 'plenos', e.target.value)}
-                    placeholder="Plenos"
-                    disabled={!isParticipating}
-                  />
-                </TableCell>
+                {tournament.format !== 'REGULAR_SEASON' && (
+                  <TableCell>
+                    <Input 
+                      type="number" 
+                      className="text-center"
+                      value={localResults[p.id]?.plenos ?? ''}
+                      onChange={(e) => handleInputChange(p.id, 'plenos', e.target.value)}
+                      placeholder="Plenos"
+                      disabled={!isParticipating}
+                    />
+                  </TableCell>
+                )}
               </TableRow>
             );
           })}
