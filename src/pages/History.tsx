@@ -36,18 +36,18 @@ export default function History() {
     return filtered.map(t => {
       const tResults = results.filter(r => r.tournamentId === t.id);
       
-      // Find winner (position 1)
-      const winnerResult = tResults.find(r => r.position === 1);
-      const runnerUpResult = tResults.find(r => r.position === 2);
+      // Find winners (position 1) - can be multiple for shared champions
+      const winnerResults = tResults.filter(r => r.position === 1);
+      const runnerUpResults = tResults.filter(r => r.position === 2);
 
-      const winner = winnerResult ? participants.find(p => p.id === winnerResult.participantId) : null;
-      const runnerUp = runnerUpResult ? participants.find(p => p.id === runnerUpResult.participantId) : null;
+      const winners = winnerResults.map(wr => participants.find(p => p.id === wr.participantId)).filter(Boolean);
+      const runnersUp = runnerUpResults.map(rr => participants.find(p => p.id === rr.participantId)).filter(Boolean);
 
       return {
         tournament: t,
-        winner,
-        runnerUp,
-        winnerPoints: winnerResult?.points
+        winners,
+        runnersUp,
+        winnerPoints: winnerResults[0]?.points
       };
     });
   }, [tournaments, results, participants, selectedYear]);
@@ -106,21 +106,29 @@ export default function History() {
                        data.tournament.type === 'MASTER_1000' ? 'Master 1000' : 'Otro'}
                     </TableCell>
                     <TableCell>
-                      {data.winner ? (
-                        <div className="flex items-center gap-2 font-semibold text-emerald-700">
-                          <Trophy className="w-4 h-4 text-yellow-500" />
-                          {data.winner.name}
-                          <span className="text-xs text-neutral-400 font-normal">({data.winnerPoints} pts)</span>
+                      {data.winners.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {data.winners.map((winner, idx) => (
+                            <div key={winner!.id} className="flex items-center gap-2 font-semibold text-emerald-700">
+                              <Trophy className="w-4 h-4 text-yellow-500" />
+                              {winner!.name}
+                              {idx === 0 && <span className="text-xs text-neutral-400 font-normal">({data.winnerPoints} pts)</span>}
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <span className="text-neutral-400 italic">Sin datos</span>
                       )}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      {data.runnerUp ? (
-                        <div className="flex items-center gap-2 text-neutral-600">
-                          <Medal className="w-4 h-4 text-neutral-400" />
-                          {data.runnerUp.name}
+                      {data.runnersUp.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {data.runnersUp.map(runnerUp => (
+                            <div key={runnerUp!.id} className="flex items-center gap-2 text-neutral-600">
+                              <Medal className="w-4 h-4 text-neutral-400" />
+                              {runnerUp!.name}
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <span className="text-neutral-400 italic">-</span>

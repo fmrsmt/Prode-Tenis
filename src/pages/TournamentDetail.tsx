@@ -11,10 +11,12 @@ import { ArrowLeft, Save, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 import { Match, Participant } from '@/types';
 import { Bracket } from '@/components/Bracket';
+import { useReadOnly } from '@/hooks/useReadOnly';
 
 export default function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isReadOnly } = useReadOnly();
   const { tournaments, participants, results, matches, saveResults, saveMatches, updateTournament } = useProdeStore();
   
   const tournament = tournaments.find(t => t.id === id);
@@ -90,14 +92,18 @@ export default function TournamentDetail() {
 
   const handleSave = () => {
     const resultsToSave = Object.entries(localResults)
-      .filter(([_, data]: [string, any]) => data.participates && (data.position !== '' || data.points !== '' || data.phasePoints !== '' || data.plenos !== ''))
+      .filter(([_, data]: [string, any]) => {
+        // Save if they explicitly don't participate, OR if they do participate and have some data
+        if (data.participates === false) return true;
+        return data.position !== '' || data.points !== '' || data.phasePoints !== '' || data.plenos !== '';
+      })
       .map(([participantId, data]: [string, any]) => ({
         participantId,
-        position: Number(data.position) || 0,
-        points: Number(data.points) || 0,
-        phasePoints: data.phasePoints === '' ? undefined : Number(data.phasePoints),
-        plenos: data.plenos === '' ? undefined : Number(data.plenos),
-        group: data.group === '' ? undefined : data.group,
+        position: data.participates ? (Number(data.position) || 0) : 0,
+        points: data.participates ? (Number(data.points) || 0) : 0,
+        phasePoints: (data.participates && data.phasePoints !== '') ? Number(data.phasePoints) : undefined,
+        plenos: (data.participates && data.plenos !== '') ? Number(data.plenos) : undefined,
+        group: (data.participates && data.group !== '') ? data.group : undefined,
         participates: data.participates
       }));
 
@@ -121,12 +127,19 @@ export default function TournamentDetail() {
        sortedByPhasePoints.forEach((p, index) => {
          if (newResults[p.id]) newResults[p.id].position = index + 1;
        });
-    } else if (tournament.format === 'REGULAR_SEASON') {
-       // Sort by points descending
+    } else if (tournament.format === 'REGULAR_SEASON' || tournament.format === 'GENERAL_TABLE') {
+       // Sort by points descending, then by plenos descending
        const sortedByPoints = [...sortedByPhasePoints].sort((a, b) => {
-         const pointsA = newResults[a.id]?.points ? Number(newResults[a.id].points) : 0;
-         const pointsB = newResults[b.id]?.points ? Number(newResults[b.id].points) : 0;
-         return pointsB - pointsA;
+         const pointsA = newResults[a.id]?.phasePoints ? Number(newResults[a.id].phasePoints) : 0;
+         const pointsB = newResults[b.id]?.phasePoints ? Number(newResults[b.id].phasePoints) : 0;
+         
+         if (pointsB !== pointsA) {
+           return pointsB - pointsA;
+         }
+         
+         const plenosA = newResults[a.id]?.plenos ? Number(newResults[a.id].plenos) : 0;
+         const plenosB = newResults[b.id]?.plenos ? Number(newResults[b.id].plenos) : 0;
+         return plenosB - plenosA;
        });
        
        sortedByPoints.forEach((p, index) => {
@@ -383,6 +396,7 @@ export default function TournamentDetail() {
   };
 
   const hasPhases = tournament.format === 'KNOCKOUT' || tournament.format === 'KNOCKOUT_TOP_4' || tournament.format === 'GROUPS';
+  const isRegularSeason = tournament.format === 'REGULAR_SEASON' || tournament.format === 'GENERAL_TABLE';
 
   const nonParticipating = participants.filter(p => !(localResults[p.id]?.participates ?? true));
   const displayParticipants = [...sortedByPhasePoints, ...nonParticipating];
@@ -398,9 +412,9 @@ export default function TournamentDetail() {
             <TableHead className="w-24 text-center">Participa</TableHead>
             {tournament.format === 'GROUPS' && <TableHead className="w-24 text-center">Grupo</TableHead>}
             <TableHead className="w-32 text-center">
-              {tournament.format === 'REGULAR_SEASON' ? 'Puntos' : 'Puntos Fase'}
+              {(tournament.format === 'REGULAR_SEASON' || tournament.format === 'GENERAL_TABLE') ? 'Puntos' : 'Puntos Fase'}
             </TableHead>
-            {tournament.format !== 'REGULAR_SEASON' && <TableHead className="w-24 text-center">Plenos</TableHead>}
+            <TableHead className="w-24 text-center">Plenos</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -440,6 +454,7 @@ export default function TournamentDetail() {
                     className="w-4 h-4 accent-emerald-600"
                     checked={isParticipating}
                     onChange={(e) => handleInputChange(p.id, 'participates', e.target.checked)}
+                    disabled={isReadOnly}
                   />
                 </TableCell>
                 {tournament.format === 'GROUPS' && (
@@ -463,21 +478,19 @@ export default function TournamentDetail() {
                     value={localResults[p.id]?.phasePoints ?? ''}
                     onChange={(e) => handleInputChange(p.id, 'phasePoints', e.target.value)}
                     placeholder="Pts"
-                    disabled={!isParticipating}
+                    disabled={!isParticipating || isReadOnly}
                   />
                 </TableCell>
-                {tournament.format !== 'REGULAR_SEASON' && (
-                  <TableCell>
-                    <Input 
-                      type="number" 
-                      className="text-center"
-                      value={localResults[p.id]?.plenos ?? ''}
-                      onChange={(e) => handleInputChange(p.id, 'plenos', e.target.value)}
-                      placeholder="Plenos"
-                      disabled={!isParticipating}
-                    />
-                  </TableCell>
-                )}
+                <TableCell>
+                  <Input 
+                    type="number" 
+                    className="text-center"
+                    value={localResults[p.id]?.plenos ?? ''}
+                    onChange={(e) => handleInputChange(p.id, 'plenos', e.target.value)}
+                    placeholder="Plenos"
+                    disabled={!isParticipating || isReadOnly}
+                  />
+                </TableCell>
               </TableRow>
             );
           })}
@@ -505,25 +518,27 @@ export default function TournamentDetail() {
             </p>
           </div>
         </div>
-        <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
-          <Save className="w-4 h-4 mr-2" />
-          Guardar Todo
-        </Button>
+        {!isReadOnly && (
+          <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
+            <Save className="w-4 h-4 mr-2" />
+            Guardar Todo
+          </Button>
+        )}
       </div>
 
-      <Tabs defaultValue={hasPhases ? "phase" : "final"} className="w-full">
+      <Tabs defaultValue={(hasPhases || isRegularSeason) ? "phase" : "final"} className="w-full">
         <TabsList className="mb-4">
-          {hasPhases && <TabsTrigger value="phase">Fase Regular / Grupos</TabsTrigger>}
+          {(hasPhases || isRegularSeason) && <TabsTrigger value="phase">{isRegularSeason ? 'Carga de Puntos' : 'Fase Regular / Grupos'}</TabsTrigger>}
           {hasPhases && <TabsTrigger value="playoffs">Playoffs</TabsTrigger>}
           <TabsTrigger value="final">Clasificación Final</TabsTrigger>
         </TabsList>
 
-        {hasPhases && (
+        {(hasPhases || isRegularSeason) && (
           <TabsContent value="phase">
             <Card>
               <CardHeader>
-                <CardTitle>Puntos de Fase</CardTitle>
-                <CardDescription>Ingresa los puntos obtenidos en la fase regular o de grupos para ver quién clasifica.</CardDescription>
+                <CardTitle>{isRegularSeason ? 'Carga de Puntos' : 'Puntos de Fase'}</CardTitle>
+                <CardDescription>{isRegularSeason ? 'Ingresa los puntos totales de cada participante.' : 'Ingresa los puntos obtenidos en la fase regular o de grupos para ver quién clasifica.'}</CardDescription>
               </CardHeader>
               <CardContent>
                 {tournament.format === 'GROUPS' ? (
@@ -567,10 +582,12 @@ export default function TournamentDetail() {
                 <CardDescription>Ingresa la posición final y los puntos ATP obtenidos por cada participante.</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => { autoCalculateFinalPositions(); autoCalculatePoints(); }} title="Calcular posiciones y puntos automáticamente">
-                  <Calculator className="w-4 h-4 mr-2" />
-                  Auto-Clasificación
-                </Button>
+                {!isReadOnly && (
+                  <Button variant="outline" onClick={() => { autoCalculateFinalPositions(); autoCalculatePoints(); }} title="Calcular posiciones y puntos automáticamente">
+                    <Calculator className="w-4 h-4 mr-2" />
+                    Auto-Clasificación
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -606,6 +623,7 @@ export default function TournamentDetail() {
                             value={localResults[p.id]?.position ?? ''}
                             onChange={(e) => handleInputChange(p.id, 'position', e.target.value)}
                             placeholder="Ej: 1"
+                            disabled={isReadOnly}
                           />
                         </TableCell>
                         <TableCell>
@@ -616,6 +634,7 @@ export default function TournamentDetail() {
                             value={localResults[p.id]?.points ?? ''}
                             onChange={(e) => handleInputChange(p.id, 'points', e.target.value)}
                             placeholder="Ej: 2000"
+                            disabled={isReadOnly}
                           />
                         </TableCell>
                       </TableRow>

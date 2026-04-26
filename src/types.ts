@@ -60,4 +60,5 @@ export interface ProdeStore {
 
   saveResults: (tournamentId: string, results: Omit<Result, 'tournamentId'>[]) => void;
   saveMatches: (tournamentId: string, matches: Omit<Match, 'tournamentId'>[]) => void;
+  importData: (data: { participants: Participant[], tournaments: Tournament[], results: Result[], matches: Match[] }) => void;
 }

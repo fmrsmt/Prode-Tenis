@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { UserPlus, Trash2, Edit, History as HistoryIcon } from 'lucide-react';
 import { ParticipantHistoryDialog } from '@/components/ParticipantHistoryDialog';
+import { useReadOnly } from '@/hooks/useReadOnly';
 
 export default function Participants() {
   const { participants, tournaments, results, addParticipant, updateParticipant, deleteParticipant } = useProdeStore();
+  const { isReadOnly } = useReadOnly();
   const [isOpen, setIsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -62,6 +64,7 @@ export default function Participants() {
       };
     })
     .filter(r => r.tournament) // Only valid tournaments
+    .filter(r => r.tournament!.status === 'COMPLETED' || r.participates === false) // Show completed or explicitly not participating
     .sort((a, b) => {
       // Sort by year descending, then by order descending, then by creation time descending
       if (b.tournament!.year !== a.tournament!.year) {
@@ -86,35 +89,37 @@ export default function Participants() {
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Participantes</h1>
           <p className="text-neutral-500">Administra los jugadores del prode</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-700">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Nuevo
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingId ? 'Editar Participante' : 'Nuevo Participante'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input 
-                  id="name" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  placeholder="Ej: Juan Pérez"
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Guardar</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {!isReadOnly && (
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger render={
+              <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-700">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Nuevo
+              </Button>
+            } />
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingId ? 'Editar Participante' : 'Nuevo Participante'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre</Label>
+                  <Input 
+                    id="name" 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    placeholder="Ej: Juan Pérez"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+                  <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">Guardar</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <ParticipantHistoryDialog 
@@ -149,16 +154,20 @@ export default function Participants() {
                         <Button variant="ghost" size="icon" onClick={() => openHistory(p)} title="Ver Historial">
                           <HistoryIcon className="w-4 h-4 text-blue-500" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)} title="Editar">
-                          <Edit className="w-4 h-4 text-neutral-500" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          if (confirm('¿Estás seguro de eliminar este participante?')) {
-                            deleteParticipant(p.id);
-                          }
-                        }} title="Eliminar">
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
+                        {!isReadOnly && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(p)} title="Editar">
+                              <Edit className="w-4 h-4 text-neutral-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => {
+                              if (confirm('¿Estás seguro de eliminar este participante?')) {
+                                deleteParticipant(p.id);
+                              }
+                            }} title="Eliminar">
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

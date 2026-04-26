@@ -4,16 +4,43 @@ import { calculateRanking } from '@/lib/ranking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trophy, Medal } from 'lucide-react';
+import { Trophy, Medal, Download } from 'lucide-react';
 import { ParticipantHistoryDialog } from '@/components/ParticipantHistoryDialog';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { useReadOnly } from '@/hooks/useReadOnly';
 
 export default function Ranking() {
-  const { participants, tournaments, results } = useProdeStore();
+  const { participants, tournaments, results, matches } = useProdeStore();
+  const { isReadOnly } = useReadOnly();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [rankingType, setRankingType] = useState<'ATP' | 'RACE'>('ATP');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
+
+  const handleDownloadBackup = () => {
+    const data = {
+      participants,
+      tournaments,
+      results,
+      matches,
+      version: '1.0',
+      exportedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `prode-tenis-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Respaldo descargado correctamente');
+  };
 
   const years = useMemo(() => {
     const y = new Set<number>(tournaments.map(t => t.year));
@@ -38,6 +65,7 @@ export default function Ranking() {
       };
     })
     .filter(r => r.tournament) // Only valid tournaments
+    .filter(r => r.tournament!.status === 'COMPLETED' || r.participates === false) // Show completed or explicitly not participating
     .sort((a, b) => {
       // Sort by year descending, then by order descending, then by creation time descending
       if (b.tournament!.year !== a.tournament!.year) {
@@ -67,6 +95,12 @@ export default function Ranking() {
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Ranking ATP Prode</h1>
           <p className="text-neutral-500">Clasificación anual de participantes</p>
         </div>
+        {!isReadOnly && (
+          <Button variant="outline" onClick={handleDownloadBackup} className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+            <Download className="w-4 h-4 mr-2" />
+            Respaldar Datos
+          </Button>
+        )}
       </div>
 
       <ParticipantHistoryDialog 

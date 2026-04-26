@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "Participant": {
+      "title": "Participant",
+      "description": "A player in the prode",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Tournament": {
+      "title": "Tournament",
+      "description": "A tennis tournament",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "year": { "type": "number" },
+        "type": { "type": "string", "enum": ["GRAND_SLAM", "MASTER_1000", "OTHER"] },
+        "format": { "type": "string", "enum": ["KNOCKOUT", "KNOCKOUT_TOP_4", "GROUPS", "GENERAL_TABLE", "REGULAR_SEASON"] },
+        "status": { "type": "string", "enum": ["UPCOMING", "IN_PROGRESS", "COMPLETED"] },
+        "order": { "type": "number" },
+        "excludeFromRanking": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "name", "year", "type", "format", "status"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "A participant's result in a tournament",
+      "type": "object",
+      "properties": {
+        "participantId": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "position": { "type": "number" },
+        "points": { "type": "number" },
+        "phasePoints": { "type": "number" },
+        "plenos": { "type": "number" },
+        "group": { "type": "string" },
+        "participates": { "type": "boolean" }
+      },
+      "required": ["participantId", "tournamentId"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "A playoff match in a tournament",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "round": { "type": "string" },
+        "participant1Id": { "type": "string" },
+        "participant2Id": { "type": "string" },
+        "winnerId": { "type": "string" },
+        "nextMatchId": { "type": "string" },
+        "position": { "type": "number" }
+      },
+      "required": ["id", "tournamentId", "round"]
+    }
+  },
+  "firestore": {
+    "/participants/{participantId}": {
+      "schema": "Participant",
+      "description": "Collection of participants"
+    },
+    "/tournaments/{tournamentId}": {
+      "schema": "Tournament",
+      "description": "Collection of tournaments"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Collection of results (resultId is usually participantId_tournamentId)"
+    },
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Collection of playoff matches"
+    }
+  }
+}

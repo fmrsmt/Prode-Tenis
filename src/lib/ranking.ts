@@ -64,6 +64,7 @@ export function calculateRanking(
   });
 
   validResults.forEach(r => {
+    if (r.participates === false) return;
     const entry = rankingMap.get(r.participantId);
     if (entry) {
       entry.points += r.points;

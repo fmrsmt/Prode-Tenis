@@ -10,7 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Edit, ChevronRight, Download } from 'lucide-react';
+import { toast } from 'sonner';
+import { useReadOnly } from '@/hooks/useReadOnly';
 
 const PREDEFINED_TOURNAMENTS = [
   { name: 'Australian Open', type: 'GRAND_SLAM', format: 'KNOCKOUT' },
@@ -31,10 +33,34 @@ const PREDEFINED_TOURNAMENTS = [
 ];
 
 export default function Tournaments() {
-  const { tournaments, addTournament, updateTournament, deleteTournament } = useProdeStore();
+  const { tournaments, addTournament, updateTournament, deleteTournament, participants, results, matches } = useProdeStore();
   const navigate = useNavigate();
+  const { isReadOnly } = useReadOnly();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleDownloadBackup = () => {
+    const data = {
+      participants,
+      tournaments,
+      results,
+      matches,
+      version: '1.0',
+      exportedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `prode-tenis-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Respaldo descargado correctamente');
+  };
   
   const currentYear = new Date().getFullYear();
   const [formData, setFormData] = useState({
@@ -128,14 +154,21 @@ export default function Tournaments() {
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Torneos</h1>
           <p className="text-neutral-500">Gestiona los torneos del prode</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger render={
-            <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo
-            </Button>
-          } />
-          <DialogContent>
+        <div className="flex gap-2">
+          {!isReadOnly && (
+            <>
+              <Button variant="outline" onClick={handleDownloadBackup} className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                <Download className="w-4 h-4 mr-2" />
+                Respaldar
+              </Button>
+              <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
+                <DialogTrigger render={
+                  <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nuevo
+                  </Button>
+                } />
+                <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingId ? 'Editar Torneo' : 'Nuevo Torneo'}</DialogTitle>
             </DialogHeader>
@@ -250,9 +283,12 @@ export default function Tournaments() {
             </form>
           </DialogContent>
         </Dialog>
+        </>
+        )}
       </div>
+    </div>
 
-      <Card>
+    <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -261,7 +297,7 @@ export default function Tournaments() {
                 <TableHead className="hidden md:table-cell">Tipo</TableHead>
                 <TableHead className="hidden sm:table-cell">Año</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="text-right">{isReadOnly ? 'Detalle' : 'Acciones'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -297,17 +333,21 @@ export default function Tournaments() {
                     <TableCell>{getStatusBadge(t.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={(e) => openEdit(t, e)}>
-                          <Edit className="w-4 h-4 text-neutral-500" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('¿Estás seguro de eliminar este torneo? Se borrarán sus resultados.')) {
-                            deleteTournament(t.id);
-                          }
-                        }}>
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
+                        {!isReadOnly && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={(e) => openEdit(t, e)}>
+                              <Edit className="w-4 h-4 text-neutral-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('¿Estás seguro de eliminar este torneo? Se borrarán sus resultados.')) {
+                                deleteTournament(t.id);
+                              }
+                            }}>
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </>
+                        )}
                         <Button variant="ghost" size="icon" className="hidden sm:inline-flex">
                           <ChevronRight className="w-4 h-4 text-neutral-400" />
                         </Button>
