@@ -108,6 +108,7 @@ export default function Ranking() {
         onOpenChange={setIsHistoryOpen} 
         participantName={viewingParticipant?.name}
         history={participantHistory}
+        initialYear={selectedYear !== currentYear ? selectedYear : undefined}
       />
 
       <Card>

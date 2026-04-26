@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Tournament } from '@/types';
 
@@ -34,20 +35,48 @@ interface ParticipantHistoryDialogProps {
   onOpenChange: (open: boolean) => void;
   participantName?: string;
   history: any[];
+  initialYear?: number;
 }
 
-export function ParticipantHistoryDialog({ isOpen, onOpenChange, participantName, history }: ParticipantHistoryDialogProps) {
+export function ParticipantHistoryDialog({ isOpen, onOpenChange, participantName, history, initialYear }: ParticipantHistoryDialogProps) {
+  const years = Array.from(new Set(history.map(h => h.tournament!.year))).sort((a, b) => b - a);
+  const [selectedYear, setSelectedYear] = useState<string>(initialYear ? initialYear.toString() : 'all');
+
+  useEffect(() => {
+    if (initialYear) {
+      setSelectedYear(initialYear.toString());
+    }
+  }, [initialYear]);
+
+  const filteredHistory = selectedYear === 'all' 
+    ? history 
+    : history.filter(h => h.tournament!.year.toString() === selectedYear);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="w-[98vw] max-w-[98vw] sm:!max-w-[98vw] md:!max-w-[98vw] lg:!max-w-[98vw] max-h-[92vh] overflow-hidden flex flex-col p-0 border-none shadow-2xl">
-        <DialogHeader className="p-3 md:p-4 bg-emerald-900 text-white shrink-0">
+        <DialogHeader className="p-3 md:p-4 bg-emerald-900 text-white shrink-0 flex flex-row items-center justify-between">
           <DialogTitle className="text-sm md:text-base font-bold">Historial: {participantName}</DialogTitle>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-emerald-200">Filtrar por año:</span>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px] bg-emerald-800 border-emerald-700 text-white text-xs h-8">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {years.map(year => (
+                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto p-2 md:p-4 bg-white">
-          {history.length === 0 ? (
+          {filteredHistory.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-neutral-400">
-              <p className="text-sm italic">No hay registros de torneos finalizados.</p>
+              <p className="text-sm italic">No hay registros para el año seleccionado.</p>
             </div>
           ) : (
             <div className="border rounded-lg overflow-hidden border-neutral-200 w-full shadow-sm">
@@ -62,7 +91,7 @@ export function ParticipantHistoryDialog({ isOpen, onOpenChange, participantName
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((h, i) => {
+                  {filteredHistory.map((h, i) => {
                     const isParticipating = h.participates !== false;
                     return (
                       <TableRow key={i} className={cn("group transition-colors border-b last:border-0", !isParticipating ? "bg-neutral-50/50 opacity-60" : "hover:bg-emerald-50/20")}>
