@@ -54,7 +54,7 @@ export function ParticipantHistoryDialog({ isOpen, onOpenChange, participantName
               <Table className="w-full">
                 <TableHeader>
                   <TableRow className="bg-neutral-50 hover:bg-neutral-50 border-b">
-                    <TableHead className="h-8 px-3 text-[10px] font-bold uppercase tracking-wider text-neutral-500">Torneo</TableHead>
+                    <TableHead className="h-8 px-3 text-[10px] font-bold uppercase tracking-wider text-neutral-500 w-40">Torneo</TableHead>
                     <TableHead className="h-8 px-3 text-center text-[10px] font-bold uppercase tracking-wider text-neutral-500 w-20">Año</TableHead>
                     <TableHead className="h-8 px-3 text-center text-[10px] font-bold uppercase tracking-wider text-neutral-500 w-24">Posición</TableHead>
                     <TableHead className="h-8 px-3 text-center text-[10px] font-bold uppercase tracking-wider text-neutral-500 w-40">Ronda</TableHead>
@@ -66,7 +66,7 @@ export function ParticipantHistoryDialog({ isOpen, onOpenChange, participantName
                     const isParticipating = h.participates !== false;
                     return (
                       <TableRow key={i} className={cn("group transition-colors border-b last:border-0", !isParticipating ? "bg-neutral-50/50 opacity-60" : "hover:bg-emerald-50/20")}>
-                        <TableCell className="py-1.5 px-3 font-medium text-xs text-neutral-900">
+                        <TableCell className="py-1.5 px-3 font-medium text-xs text-neutral-900 w-40">
                           {h.tournament!.name}
                         </TableCell>
                         <TableCell className="py-1.5 px-3 text-center text-xs text-neutral-600">
