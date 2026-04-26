@@ -56,7 +56,7 @@ export default function Layout() {
       <div className="md:hidden bg-white border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-2 font-bold text-lg text-emerald-700">
           <Trophy className="w-6 h-6" />
-          Prode Tenis
+          Prode Tenis Conmigliazzo
         </div>
         <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           <Menu className="w-6 h-6" />
@@ -70,7 +70,7 @@ export default function Layout() {
       )}>
         <div className="p-6 hidden md:flex items-center gap-2 font-bold text-xl text-emerald-700 border-b">
           <Trophy className="w-6 h-6" />
-          Prode Tenis
+          Prode Tenis Conmigliazzo
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navigation.map((item) => {

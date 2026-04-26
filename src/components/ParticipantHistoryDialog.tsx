@@ -39,7 +39,7 @@ interface ParticipantHistoryDialogProps {
 export function ParticipantHistoryDialog({ isOpen, onOpenChange, participantName, history }: ParticipantHistoryDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-[96vw] max-h-[92vh] overflow-hidden flex flex-col p-0 border-none shadow-2xl">
+      <DialogContent className="w-[98vw] max-w-[98vw] sm:!max-w-[98vw] md:!max-w-[98vw] lg:!max-w-[98vw] max-h-[92vh] overflow-hidden flex flex-col p-0 border-none shadow-2xl">
         <DialogHeader className="p-3 md:p-4 bg-emerald-900 text-white shrink-0">
           <DialogTitle className="text-sm md:text-base font-bold">Historial: {participantName}</DialogTitle>
         </DialogHeader>
