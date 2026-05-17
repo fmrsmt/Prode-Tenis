@@ -2,14 +2,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ===============================================================
+    // Global Safety Net
+    // ===============================================================
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+
+    // ===============================================================
     // Helper Functions
     // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    function isVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
     function isAdmin() {
-      return isAuthenticated() && 
+      return isVerified() && 
         (request.auth.token.email == "frankimedinaraed@gmail.com");
     }
 
